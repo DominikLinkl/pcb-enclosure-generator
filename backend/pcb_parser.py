@@ -262,15 +262,20 @@ def parse_step_file(data: bytes) -> PCBData:
     """Extract bounding box from a STEP file using build123d."""
     try:
         import tempfile, os
-        from build123d import import_step, BoundingBox
+        import build123d as _b
+
+        # API name changed across versions
+        _import_step = getattr(_b, "import_step", None) or getattr(_b, "import_step_file", None)
+        if _import_step is None:
+            raise ImportError("Cannot find import_step in build123d. Update to >= 0.6.")
 
         with tempfile.NamedTemporaryFile(suffix=".step", delete=False) as tmp:
             tmp.write(data)
             tmp_path = tmp.name
         try:
-            shape = import_step(tmp_path)
+            shape = _import_step(tmp_path)
             bb = shape.bounding_box()
-            width = round(bb.size.X, 3)
+            width  = round(bb.size.X, 3)
             height = round(bb.size.Y, 3)
         finally:
             os.unlink(tmp_path)

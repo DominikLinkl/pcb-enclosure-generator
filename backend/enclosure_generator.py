@@ -15,8 +15,8 @@ from dataclasses import dataclass
 from typing import List, Tuple
 
 from build123d import (
-    BuildPart, Box, Cylinder, Location, Locations, Mode, Axis,
-    export_stl, export_step, chamfer, Compound,
+    BuildPart, Box, Cylinder, Location, Locations, Mode,
+    export_stl, export_step,
 )
 
 from pcb_parser import PCBData, Hole, IOFeature

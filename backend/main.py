@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, validator
 
 from pcb_parser import parse_gerber_zip, parse_step_file, PCBData, Hole, IOFeature
-from enclosure_generator import generate_enclosure, EnclosureParams
+from enclosure_generator import generate_enclosure, EnclosureParams, HEAT_SET_INSERTS
 
 app = FastAPI(title="PCB Enclosure Generator", version="1.0.0")
 
@@ -72,12 +72,19 @@ class GenerateRequest(BaseModel):
     inner_height: float = Field(default=25.0, ge=5.0, le=200.0)
     wall_thickness: float = Field(default=2.4, ge=1.2, le=8.0)
     tolerance: float = Field(default=0.3, ge=0.0, le=2.0)
-    pcb_standoff_height: float = Field(default=5.0, ge=2.0, le=30.0)
-    insert_hole_diameter: float = Field(default=4.0, ge=2.0, le=8.0)
-    floor_thickness: float = Field(default=1.2, ge=0.8, le=4.0)
+    pcb_standoff_height: float = Field(default=6.0, ge=2.0, le=30.0)
+    floor_thickness: float = Field(default=1.5, ge=0.8, le=4.0)
     lid_thickness: float = Field(default=1.6, ge=0.8, le=4.0)
+    screw_type: str = Field(default="M3")
+    insert_short: bool = Field(default=True)
     mounting_holes: List[HoleDTO] = []
     io_features: List[IOFeatureDTO] = []
+
+    @validator("screw_type")
+    def _check_screw(cls, v):
+        if v not in HEAT_SET_INSERTS:
+            raise ValueError(f"screw_type must be one of {list(HEAT_SET_INSERTS)}")
+        return v
 
 
 class GenerateResult(BaseModel):
@@ -150,9 +157,10 @@ async def generate(req: GenerateRequest):
         wall_thickness=req.wall_thickness,
         tolerance=req.tolerance,
         pcb_standoff_height=req.pcb_standoff_height,
-        insert_hole_diameter=req.insert_hole_diameter,
         floor_thickness=req.floor_thickness,
         lid_thickness=req.lid_thickness,
+        screw_type=req.screw_type,
+        insert_short=req.insert_short,
     )
 
     out_dir = str(Path(job["dir"]) / "output")

@@ -1,9 +1,18 @@
 """
 Parses Gerber ZIP archives and STEP files to extract:
   - Board outline (bounding box + polygon points)
-  - Mounting holes (position + diameter, only holes > 2 mm)
-  - I/O features near board edges (detected from drill file)
+  - Mounting holes (every drilled hole > 1 mm — user picks the real ones
+    via the frontend; defaults are auto-selected for holes >= 2.5 mm)
+  - I/O features near board edges (detected from drill file, > 5 mm)
 """
+
+# Detection thresholds.
+# - All holes >= MIN_MOUNTING_DIAMETER are surfaced as "potential mounting".
+# - Holes >= AUTO_ENABLE_DIAMETER are pre-checked (likely real mounting holes).
+# - Holes >= IO_MIN_DIAMETER near a board edge become I/O cutout candidates.
+MIN_MOUNTING_DIAMETER = 1.0
+AUTO_ENABLE_DIAMETER  = 2.5
+IO_MIN_DIAMETER       = 5.0
 
 import re
 import math
@@ -26,8 +35,8 @@ class Hole:
     x: float
     y: float
     diameter: float
-    is_mounting: bool  # True when diameter > 2 mm
-    enabled: bool = True  # user can toggle off false-positives
+    is_mounting: bool         # True for "likely" mounting (diameter >= AUTO_ENABLE_DIAMETER)
+    enabled: bool = True      # user toggle; default matches is_mounting
 
 
 @dataclass
@@ -152,7 +161,11 @@ def _parse_drill_file(text: str) -> List[Hole]:
                 x *= 25.4
                 y *= 25.4
             dia = tools[current_tool]
-            holes.append(Hole(x=x, y=y, diameter=dia, is_mounting=(dia > 2.0)))
+            if dia < MIN_MOUNTING_DIAMETER:
+                continue
+            likely = dia >= AUTO_ENABLE_DIAMETER
+            holes.append(Hole(x=x, y=y, diameter=dia,
+                              is_mounting=likely, enabled=likely))
 
     return holes
 
@@ -166,13 +179,13 @@ _IO_EDGE_MARGIN_MM = 3.0   # hole center within this distance of board edge
 
 def _detect_io_features(holes: List[Hole], board_x0: float, board_y0: float,
                          board_w: float, board_h: float) -> List[IOFeature]:
-    """Holes > 2 mm near the board edge are treated as I/O cutout candidates."""
+    """Holes >= IO_MIN_DIAMETER near the board edge are treated as I/O candidates."""
     features: List[IOFeature] = []
     x1, y1 = board_x0, board_y0
     x2, y2 = board_x0 + board_w, board_y0 + board_h
 
     for h in holes:
-        if h.diameter <= 2.0:
+        if h.diameter < IO_MIN_DIAMETER:
             continue
         near_left = abs(h.x - x1) < _IO_EDGE_MARGIN_MM
         near_right = abs(h.x - x2) < _IO_EDGE_MARGIN_MM
@@ -235,15 +248,16 @@ def parse_gerber_zip(data: bytes) -> PCBData:
     # Normalise outline to origin
     norm_pts = [(round(p[0] - x0, 3), round(p[1] - y0, 3)) for p in outline_points]
 
-    # Normalise hole coordinates too
+    # Normalise hole coordinates too; surface every >=1mm hole as a
+    # potential mounting hole (user confirms via the UI).
     norm_holes = [Hole(
         x=round(h.x - x0, 3),
         y=round(h.y - y0, 3),
         diameter=h.diameter,
         is_mounting=h.is_mounting,
+        enabled=h.enabled,
     ) for h in holes]
 
-    mounting_holes = [h for h in norm_holes if h.is_mounting]
     io_features = _detect_io_features(holes, x0, y0, width, height)
 
     return PCBData(
@@ -252,7 +266,7 @@ def parse_gerber_zip(data: bytes) -> PCBData:
         origin_x=x0,
         origin_y=y0,
         outline_points=norm_pts,
-        mounting_holes=mounting_holes,
+        mounting_holes=norm_holes,
         io_features=io_features,
         source_format="gerber",
     )

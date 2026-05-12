@@ -34,7 +34,7 @@
     header h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.5px; }
     header p  { color: var(--muted); margin-top: 8px; font-size: 0.95rem; }
 
-    .container { max-width: 1100px; margin: 0 auto; }
+    .container { max-width: 1280px; margin: 0 auto; }
 
     .steps {
       display: flex;
@@ -110,6 +110,7 @@
       font-size: 0.88rem;
       width: 78px;
     }
+    select { width: auto; padding-right: 22px; }
     input[type="number"]:focus, input[type="text"]:focus, select:focus {
       outline: none; border-color: var(--accent);
     }
@@ -133,9 +134,10 @@
       font-size: 0.7rem; font-weight: 600;
       padding: 2px 7px; border-radius: 999px;
     }
-    .badge-blue { background: rgba(79,110,247,0.15); color: #818cf8; }
-    .badge-amber { background: rgba(245,158,11,0.15); color: #fbbf24; }
+    .badge-blue   { background: rgba(79,110,247,0.15); color: #818cf8; }
+    .badge-amber  { background: rgba(245,158,11,0.15); color: #fbbf24; }
     .badge-manual { background: rgba(34,197,94,0.15); color: #4ade80; }
+    .badge-small  { background: rgba(100,116,139,0.15); color: #94a3b8; }
 
     .add-row-btn {
       display: inline-flex; align-items: center; gap: 6px;
@@ -158,20 +160,34 @@
     }
     .delete-btn:hover { opacity: 1; }
 
-    /* Blueprint canvas */
-    .blueprint-wrap {
+    /* Three-view canvas grid */
+    .views-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 900px) { .views-grid { grid-template-columns: 1fr; } }
+    .view-wrap {
       background: #0a0d14;
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 14px;
-      margin-bottom: 12px;
+      padding: 10px;
+      display: flex; flex-direction: column;
     }
-    #blueprint {
+    .view-title {
+      font-size: 0.75rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--muted); margin-bottom: 6px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .view-title .axis { color: #475569; font-size: 0.7rem; font-weight: 500; }
+    .view-wrap canvas {
       display: block;
       width: 100%;
-      height: auto;
-      max-height: 500px;
+      height: 280px;
     }
+    .view-wrap.top canvas { cursor: pointer; }
     .blueprint-legend {
       display: flex; flex-wrap: wrap;
       gap: 14px; font-size: 0.78rem;
@@ -259,6 +275,12 @@
       justify-content: flex-end;
       margin-top: 8px; flex-wrap: wrap;
     }
+
+    .insert-hint {
+      font-size: 0.78rem; color: var(--muted);
+      margin-top: 6px;
+    }
+    .insert-hint strong { color: var(--text); }
   </style>
 </head>
 <body>
@@ -293,19 +315,69 @@
   <div class="section" id="sec-params">
     <div class="card">
       <h2>
-        Bauplan
+        Bauplan · 3 Ansichten (Live)
         <span class="hint" id="dim-hint"></span>
       </h2>
-      <div class="blueprint-wrap">
-        <canvas id="blueprint" width="1040" height="500"></canvas>
+      <div class="views-grid">
+        <div class="view-wrap top">
+          <div class="view-title">
+            <span>Draufsicht · klicken zum Aktivieren/Deaktivieren</span>
+            <span class="axis">X → · Y ↑</span>
+          </div>
+          <canvas id="view-top" width="520" height="280"></canvas>
+        </div>
+        <div class="view-wrap">
+          <div class="view-title">
+            <span>Vorderansicht (Schnitt durch Mitte)</span>
+            <span class="axis">X → · Z ↑</span>
+          </div>
+          <canvas id="view-front" width="520" height="280"></canvas>
+        </div>
+        <div class="view-wrap">
+          <div class="view-title">
+            <span>Seitenansicht (Schnitt durch Mitte)</span>
+            <span class="axis">Y → · Z ↑</span>
+          </div>
+          <canvas id="view-side" width="520" height="280"></canvas>
+        </div>
       </div>
       <div class="blueprint-legend">
-        <span><span class="legend-line" style="background:#475569"></span>Außenwand</span>
+        <span><span class="legend-line" style="background:#475569"></span>Außenwand / Lid</span>
         <span><span class="legend-line" style="background:#22c55e"></span>PCB-Outline</span>
-        <span><span class="legend-dot" style="background:#1d4ed8"></span>Montage-Standoff</span>
-        <span><span class="legend-dot" style="background:#a855f7"></span>Deckelschraube</span>
+        <span><span class="legend-dot" style="background:#1d4ed8"></span>Montage-Standoff (aktiv)</span>
+        <span><span class="legend-dot" style="background:#475569"></span>Inaktiv (klicken zum Aktivieren)</span>
         <span><span class="legend-dot" style="background:#f59e0b"></span>I/O-Cutout</span>
       </div>
+    </div>
+
+    <div class="card">
+      <h2>Heat-Set Insert (Schraubentyp)</h2>
+      <div class="form-grid">
+        <div class="field">
+          <label>Schraube</label>
+          <div class="field-row">
+            <select id="screw-type">
+              <option value="M2">M2</option>
+              <option value="M2.5">M2.5</option>
+              <option value="M3" selected>M3</option>
+              <option value="M4">M4</option>
+              <option value="M5">M5</option>
+              <option value="M6">M6</option>
+              <option value="M8">M8</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Insert-Variante</label>
+          <div class="field-row">
+            <select id="insert-variant">
+              <option value="short" selected>Short (weniger Tiefe)</option>
+              <option value="std">Standard</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="insert-hint" id="insert-hint"></div>
     </div>
 
     <div class="card">
@@ -338,24 +410,24 @@
         <div class="field">
           <label>PCB-Standoff-Höhe</label>
           <div class="field-row">
-            <input type="range" id="standoff" min="2" max="30" step="0.5" value="5" />
-            <input type="number" id="standoff-val" min="2" max="30" step="0.5" value="5" />
-            <span class="unit">mm</span>
-          </div>
-        </div>
-        <div class="field">
-          <label>Kernloch Heat-Set (M3)</label>
-          <div class="field-row">
-            <input type="range" id="insert-hole" min="2" max="8" step="0.1" value="4" />
-            <input type="number" id="insert-hole-val" min="2" max="8" step="0.1" value="4" />
+            <input type="range" id="standoff" min="2" max="30" step="0.5" value="6" />
+            <input type="number" id="standoff-val" min="2" max="30" step="0.5" value="6" />
             <span class="unit">mm</span>
           </div>
         </div>
         <div class="field">
           <label>Bodenstärke</label>
           <div class="field-row">
-            <input type="range" id="floor" min="0.8" max="4" step="0.4" value="1.2" />
-            <input type="number" id="floor-val" min="0.8" max="4" step="0.4" value="1.2" />
+            <input type="range" id="floor" min="0.8" max="4" step="0.4" value="1.5" />
+            <input type="number" id="floor-val" min="0.8" max="4" step="0.4" value="1.5" />
+            <span class="unit">mm</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Deckelstärke</label>
+          <div class="field-row">
+            <input type="range" id="lid" min="0.8" max="4" step="0.4" value="1.6" />
+            <input type="number" id="lid-val" min="0.8" max="4" step="0.4" value="1.6" />
             <span class="unit">mm</span>
           </div>
         </div>
@@ -364,19 +436,21 @@
 
     <div class="card">
       <h2>
-        Montage-Standoffs
+        Mounting-Löcher (potentielle Standoff-Positionen)
         <span class="hint" id="holes-hint"></span>
       </h2>
       <p style="color:var(--muted);font-size:0.84rem;margin-bottom:10px">
-        Erkannte Befestigungslöcher (&gt; 2&nbsp;mm Ø). Falsch erkannte Vias abwählen.
-        Bei Bedarf manuelle Standoff-Positionen hinzufügen.
+        Erkannt werden <strong>alle Bohrungen ≥ 1 mm</strong>. Bohrungen ab 2,5 mm sind
+        automatisch aktiviert (typische M3-Montagebohrung). Kleinere Löcher (Vias)
+        sind deaktiviert — bei Bedarf einfach aktivieren oder direkt in der
+        Draufsicht anklicken.
       </p>
       <table id="holes-table">
         <thead>
           <tr>
             <th style="width:60px">Aktiv</th>
             <th>X (mm)</th><th>Y (mm)</th><th>Ø (mm)</th>
-            <th>Quelle</th><th style="width:40px"></th>
+            <th>Typ</th><th>Quelle</th><th style="width:40px"></th>
           </tr>
         </thead>
         <tbody id="holes-tbody"></tbody>
@@ -390,8 +464,8 @@
         <span class="hint" id="io-hint"></span>
       </h2>
       <p style="color:var(--muted);font-size:0.84rem;margin-bottom:10px">
-        Automatisch erkannte randnahe Öffnungen plus manuell hinzufügbare Cutouts
-        für Klemmen, USB-Buchsen, etc.
+        Automatisch erkannte randnahe Öffnungen (≥ 5 mm) plus manuell hinzufügbare
+        Cutouts für Klemmen, USB-Buchsen, etc.
       </p>
       <table id="io-table">
         <thead>
@@ -425,8 +499,8 @@
       <h2>Gehäuse fertig</h2>
       <p style="color:var(--muted);font-size:0.88rem;margin-bottom:24px">
         Shell (Schale) und Lid (Deckel) sind bereit zum Download. Beide Teile sind
-        FDM-optimiert: 45°-Fasen, Heat-Set-Kernlöcher, Material-Shrinkage-Ausgleich
-        auf dem Deckel, durchgehende M3-Schraublöcher.
+        FDM-optimiert: Heat-Set-Insert-Pockets in den Shell-Standoffs, dazu
+        passende Durchgangslöcher im Lid. Material-Shrinkage-Ausgleich auf dem Deckel.
       </p>
       <div class="dl-grid" id="dl-grid"></div>
     </div>
@@ -437,6 +511,19 @@
 </div>
 
 <script>
+  // ── Heat-set insert table (mirrors backend) ──────────────────────────────
+  const INSERTS = {
+    'M2':   { pocket_d: 3.2,  depth_short: 3.5,  depth_std: 4.5,  screw_clearance_d: 2.4 },
+    'M2.5': { pocket_d: 3.8,  depth_short: 4.5,  depth_std: 6.0,  screw_clearance_d: 2.9 },
+    'M3':   { pocket_d: 4.5,  depth_short: 4.5,  depth_std: 6.0,  screw_clearance_d: 3.4 },
+    'M4':   { pocket_d: 5.8,  depth_short: 5.0,  depth_std: 8.5,  screw_clearance_d: 4.5 },
+    'M5':   { pocket_d: 7.0,  depth_short: 6.5,  depth_std: 10.0, screw_clearance_d: 5.5 },
+    'M6':   { pocket_d: 8.6,  depth_short: 7.5,  depth_std: 13.0, screw_clearance_d: 6.6 },
+    'M8':   { pocket_d: 10.2, depth_short: 10.0, depth_std: 13.0, screw_clearance_d: 9.0 },
+  };
+  const BOSS_WALL = 2.0;
+  const LID_HOLE_CLEARANCE = 0.2;
+
   // ── Global state ────────────────────────────────────────────────────────
   const API = '';
   let jobId = null;
@@ -464,25 +551,41 @@
     ['wall',         'wall-val'],
     ['tolerance',    'tolerance-val'],
     ['standoff',     'standoff-val'],
-    ['insert-hole',  'insert-hole-val'],
     ['floor',        'floor-val'],
+    ['lid',          'lid-val'],
   ];
   sliderPairs.forEach(([sliderId, numId]) => {
     const slider = document.getElementById(sliderId);
     const num    = document.getElementById(numId);
-    slider.addEventListener('input', () => { num.value = slider.value; drawBlueprint(); });
-    num.addEventListener('input',    () => { slider.value = num.value; drawBlueprint(); });
+    slider.addEventListener('input', () => { num.value = slider.value;   redraw(); updateHints(); });
+    num.addEventListener('input',    () => { slider.value = num.value;   redraw(); updateHints(); });
   });
+  document.getElementById('screw-type').addEventListener('change',     () => { redraw(); updateHints(); });
+  document.getElementById('insert-variant').addEventListener('change', () => { redraw(); updateHints(); });
 
   function getParams() {
+    const screw_type = document.getElementById('screw-type').value;
+    const variant    = document.getElementById('insert-variant').value;
     return {
-      inner_height:         parseFloat(document.getElementById('inner-height-val').value),
-      wall_thickness:       parseFloat(document.getElementById('wall-val').value),
-      tolerance:            parseFloat(document.getElementById('tolerance-val').value),
-      pcb_standoff_height:  parseFloat(document.getElementById('standoff-val').value),
-      insert_hole_diameter: parseFloat(document.getElementById('insert-hole-val').value),
-      floor_thickness:      parseFloat(document.getElementById('floor-val').value),
+      inner_height:        parseFloat(document.getElementById('inner-height-val').value),
+      wall_thickness:      parseFloat(document.getElementById('wall-val').value),
+      tolerance:           parseFloat(document.getElementById('tolerance-val').value),
+      pcb_standoff_height: parseFloat(document.getElementById('standoff-val').value),
+      floor_thickness:     parseFloat(document.getElementById('floor-val').value),
+      lid_thickness:       parseFloat(document.getElementById('lid-val').value),
+      screw_type,
+      insert_short:        variant === 'short',
     };
+  }
+
+  function insertGeometry(p) {
+    const ins = INSERTS[p.screw_type];
+    const pocket_depth = p.insert_short ? ins.depth_short : ins.depth_std;
+    const standoff_od  = Math.max(ins.pocket_d + 2 * BOSS_WALL, 6.0);
+    const lid_hole_d   = ins.screw_clearance_d + LID_HOLE_CLEARANCE;
+    const eff_standoff = Math.max(p.pcb_standoff_height, pocket_depth + 0.8);
+    return { pocket_d: ins.pocket_d, pocket_depth, standoff_od, lid_hole_d,
+             eff_standoff, screw_clearance_d: ins.screw_clearance_d };
   }
 
   // ── Upload + analyse ────────────────────────────────────────────────────
@@ -508,7 +611,7 @@
         return {
           label: f.label || `IO_${i+1}`,
           side: f.side && f.side !== 'auto' ? f.side : inferred.side,
-          pos: inferred.pos,             // mm along the chosen wall, measured from board origin
+          pos: inferred.pos,
           width: f.width,
           height: f.cutout_height,
           z_offset: f.z_offset,
@@ -519,11 +622,12 @@
       renderHolesTable();
       renderIOTable();
       updateHints();
-      drawBlueprint();
+      redraw();
       setStep(2);
+      const active = holes.filter(h => h.enabled).length;
       showStatus('success',
         `Platine: ${pcb.board_width.toFixed(1)} × ${pcb.board_height.toFixed(1)} mm · ` +
-        `${holes.length} Montageloch(Löcher) · ${ios.length} I/O-Feature(s) erkannt`);
+        `${holes.length} Loch/Löcher gefunden (${active} aktiv) · ${ios.length} I/O-Feature(s)`);
     } catch (e) {
       showStatus('error', e.message);
     }
@@ -542,18 +646,22 @@
     body.innerHTML = '';
     holes.forEach((h, i) => {
       const tr = document.createElement('tr');
+      const typeBadge = h.is_mounting
+        ? '<span class="badge badge-blue">Likely</span>'
+        : '<span class="badge badge-small">Vias / klein</span>';
       tr.innerHTML = `
         <td><input type="checkbox" ${h.enabled ? 'checked' : ''} onchange="updateHole(${i},'enabled',this.checked)"></td>
         <td><input type="number" value="${h.x.toFixed(2)}" step="0.5" onchange="updateHole(${i},'x',parseFloat(this.value))"></td>
         <td><input type="number" value="${h.y.toFixed(2)}" step="0.5" onchange="updateHole(${i},'y',parseFloat(this.value))"></td>
         <td><input type="number" value="${h.diameter.toFixed(2)}" step="0.1" min="0.5" onchange="updateHole(${i},'diameter',parseFloat(this.value))"></td>
+        <td>${typeBadge}</td>
         <td><span class="badge badge-${h.source === 'manual' ? 'manual' : 'blue'}">${h.source === 'manual' ? 'Manuell' : 'Auto'}</span></td>
         <td><button class="delete-btn" onclick="deleteHole(${i})" title="Entfernen">&#x2715;</button></td>`;
       body.appendChild(tr);
     });
   }
-  function updateHole(i, field, val) { holes[i][field] = val; drawBlueprint(); updateHints(); }
-  function deleteHole(i) { holes.splice(i, 1); renderHolesTable(); drawBlueprint(); updateHints(); }
+  function updateHole(i, field, val) { holes[i][field] = val; redraw(); updateHints(); }
+  function deleteHole(i) { holes.splice(i, 1); renderHolesTable(); redraw(); updateHints(); }
   function addManualHole() {
     if (!pcb) return;
     holes.push({
@@ -561,7 +669,7 @@
       diameter: 3.2, is_mounting: true,
       enabled: true, source: 'manual',
     });
-    renderHolesTable(); drawBlueprint(); updateHints();
+    renderHolesTable(); redraw(); updateHints();
   }
 
   // ── I/O table ───────────────────────────────────────────────────────────
@@ -590,8 +698,8 @@
       body.appendChild(tr);
     });
   }
-  function updateIO(i, field, val) { ios[i][field] = val; drawBlueprint(); updateHints(); }
-  function deleteIO(i) { ios.splice(i, 1); renderIOTable(); drawBlueprint(); updateHints(); }
+  function updateIO(i, field, val) { ios[i][field] = val; redraw(); updateHints(); }
+  function deleteIO(i) { ios.splice(i, 1); renderIOTable(); redraw(); updateHints(); }
   function addManualIO() {
     if (!pcb) return;
     ios.push({
@@ -601,7 +709,7 @@
       width: 12, height: 8, z_offset: 0,
       enabled: true, source: 'manual',
     });
-    renderIOTable(); drawBlueprint(); updateHints();
+    renderIOTable(); redraw(); updateHints();
   }
 
   function updateHints() {
@@ -611,73 +719,82 @@
     document.getElementById('io-hint').textContent    = `${activeI} aktiv von ${ios.length}`;
     if (pcb) {
       const p = getParams();
+      const g = insertGeometry(p);
       const ow = pcb.board_width  + 2 * p.tolerance + 2 * p.wall_thickness;
       const oh = pcb.board_height + 2 * p.tolerance + 2 * p.wall_thickness;
-      const oz = p.floor_thickness + p.pcb_standoff_height + p.inner_height;
+      const oz = p.floor_thickness + g.eff_standoff + p.inner_height;
       document.getElementById('dim-hint').textContent =
-        `Gehäuse außen: ${ow.toFixed(1)} × ${oh.toFixed(1)} × ${oz.toFixed(1)} mm`;
+        `Gehäuse außen: ${ow.toFixed(1)} × ${oh.toFixed(1)} × ${(oz + p.lid_thickness).toFixed(1)} mm`;
+      const hint = document.getElementById('insert-hint');
+      hint.innerHTML =
+        `<strong>${p.screw_type}</strong> · Pocket Ø ${g.pocket_d} mm × ${g.pocket_depth} mm · ` +
+        `Standoff Ø ${g.standoff_od.toFixed(1)} mm · Lid-Durchgang Ø ${g.lid_hole_d.toFixed(1)} mm · ` +
+        `Schraubenlänge ≈ ${(p.lid_thickness + p.inner_height + g.pocket_depth - 1).toFixed(0)} mm`;
     }
   }
 
-  // ── Lid boss positions (mirrors backend math) ──────────────────────────
-  function lidBossPositions(outerW, outerH, wall, maxSpacing=30, minCount=4) {
-    const perimeter = 2 * (outerW + outerH);
-    const n = Math.max(minCount, Math.ceil(perimeter / maxSpacing));
-    const corners = [
-      [wall, wall],
-      [outerW - wall, wall],
-      [outerW - wall, outerH - wall],
-      [wall, outerH - wall],
-    ];
-    const positions = [...corners];
-    const sides = [
-      [corners[0], corners[1]],
-      [corners[1], corners[2]],
-      [corners[2], corners[3]],
-      [corners[3], corners[0]],
-    ];
-    const extra = n - 4;
-    const perSide = Math.floor(extra / 4);
-    const remainder = extra % 4;
-    sides.forEach((s, i) => {
-      const [[x0, y0], [x1, y1]] = s;
-      const count = perSide + (i < remainder ? 1 : 0);
-      for (let j = 1; j <= count; j++) {
-        const t = j / (count + 1);
-        positions.push([x0 + t * (x1 - x0), y0 + t * (y1 - y0)]);
-      }
-    });
-    return positions;
+  // ── Helpers shared by views ─────────────────────────────────────────────
+  function activeHolePositions() {
+    // Returns array of {x, y, source, idx} for enabled holes (PCB coords).
+    return holes.map((h, i) => ({ ...h, idx: i })).filter(h => h.enabled);
   }
 
-  // ── Blueprint drawing ──────────────────────────────────────────────────
-  function drawBlueprint() {
+  function fitScale(W, H, contentW, contentH, pad) {
+    return Math.min((W - 2 * pad) / contentW, (H - 2 * pad) / contentH);
+  }
+
+  function resizeCanvases() {
+    // Re-set canvas pixel size to match its CSS size (avoids blurry rendering).
+    ['view-top', 'view-front', 'view-side'].forEach(id => {
+      const c = document.getElementById(id);
+      const rect = c.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.max(200, Math.floor(rect.width));
+      const h = Math.max(180, Math.floor(rect.height));
+      if (c.width !== w * dpr || c.height !== h * dpr) {
+        c.width  = w * dpr;
+        c.height = h * dpr;
+      }
+    });
+  }
+
+  function redraw() {
     if (!pcb) return;
-    const canvas = document.getElementById('blueprint');
+    resizeCanvases();
+    drawTop();
+    drawFront();
+    drawSide();
+  }
+
+  // ── Top view (X-Y, looking down -Z) ─────────────────────────────────────
+  function drawTop() {
+    const canvas = document.getElementById('view-top');
     const ctx = canvas.getContext('2d');
-    const W = canvas.width, H = canvas.height, pad = 60;
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const W = canvas.width / dpr, H = canvas.height / dpr, pad = 30;
     const p = getParams();
+    const g = insertGeometry(p);
 
     const ow = pcb.board_width  + 2 * p.tolerance + 2 * p.wall_thickness;
     const oh = pcb.board_height + 2 * p.tolerance + 2 * p.wall_thickness;
-    const scale = Math.min((W - 2 * pad) / ow, (H - 2 * pad) / oh);
+    const scale = fitScale(W, H, ow, oh, pad);
     const ox = (W - ow * scale) / 2;
     const oy = (H - oh * scale) / 2;
 
-    // World -> canvas helpers. Y is flipped so +y points up like a CAD view.
     const px = wx => ox + wx * scale;
     const py = wy => oy + (oh - wy) * scale;
 
     ctx.clearRect(0, 0, W, H);
 
-    // 1. Outer wall fill
+    // Outer wall
     ctx.fillStyle = '#1e2433';
     ctx.fillRect(px(0), py(oh), ow * scale, oh * scale);
     ctx.strokeStyle = '#475569';
     ctx.lineWidth = 1.5;
     ctx.strokeRect(px(0), py(oh), ow * scale, oh * scale);
 
-    // 2. Inner cavity (PCB + tolerance margin)
+    // Cavity
     const cavW = pcb.board_width  + 2 * p.tolerance;
     const cavH = pcb.board_height + 2 * p.tolerance;
     const cavX = p.wall_thickness, cavY = p.wall_thickness;
@@ -688,7 +805,7 @@
     ctx.strokeRect(px(cavX), py(cavY + cavH), cavW * scale, cavH * scale);
     ctx.setLineDash([]);
 
-    // 3. PCB outline (offset by wall + tolerance so it sits in the cavity)
+    // PCB outline
     const pcbOx = p.wall_thickness + p.tolerance;
     const pcbOy = p.wall_thickness + p.tolerance;
     ctx.fillStyle = 'rgba(34,197,94,0.08)';
@@ -706,100 +823,261 @@
       ctx.strokeRect(px(pcbOx), py(pcbOy + pcb.board_height), pcb.board_width * scale, pcb.board_height * scale);
     }
 
-    // 4. Mounting standoffs
-    const standoffOD = 6.5;
-    holes.filter(h => h.enabled).forEach(h => {
+    // All holes (active = blue ring, inactive = gray ring with X marker)
+    holes.forEach((h, i) => {
       const hx = px(pcbOx + h.x);
       const hy = py(pcbOy + h.y);
-      // Standoff outer ring
-      ctx.beginPath();
-      ctx.arc(hx, hy, Math.max(3, standoffOD * scale / 2), 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(29,78,216,0.35)';
-      ctx.strokeStyle = '#60a5fa';
-      ctx.lineWidth = 1.2;
-      ctx.fill(); ctx.stroke();
-      // Heat-set core
-      ctx.beginPath();
-      ctx.arc(hx, hy, Math.max(1.5, p.insert_hole_diameter * scale / 2), 0, Math.PI * 2);
-      ctx.fillStyle = '#0a0d14';
-      ctx.strokeStyle = '#3b82f6';
-      ctx.lineWidth = 0.8;
-      ctx.fill(); ctx.stroke();
+      const r_drill   = Math.max(2, h.diameter * scale / 2);
+      const r_standoff = Math.max(r_drill + 2, g.standoff_od * scale / 2);
+      if (h.enabled) {
+        ctx.beginPath();
+        ctx.arc(hx, hy, r_standoff, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(29,78,216,0.35)';
+        ctx.strokeStyle = '#60a5fa';
+        ctx.lineWidth = 1.2;
+        ctx.fill(); ctx.stroke();
+        // Heat-set pocket (inner)
+        ctx.beginPath();
+        ctx.arc(hx, hy, Math.max(1.5, g.pocket_d * scale / 2), 0, Math.PI * 2);
+        ctx.fillStyle = '#0a0d14';
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 0.8;
+        ctx.fill(); ctx.stroke();
+      } else {
+        // Drill outline only
+        ctx.beginPath();
+        ctx.arc(hx, hy, r_drill, 0, Math.PI * 2);
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 1;
+        ctx.fillStyle = 'rgba(71,85,105,0.15)';
+        ctx.fill();
+        ctx.stroke();
+      }
     });
 
-    // 5. Lid screw bosses
-    const bossOD = 6.0;
-    const screwD = 3.2;
-    const bosses = lidBossPositions(ow, oh, p.wall_thickness);
-    bosses.forEach(([bx, by]) => {
-      const cx = px(bx), cy = py(by);
-      ctx.beginPath();
-      ctx.arc(cx, cy, Math.max(3, bossOD * scale / 2), 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(168,85,247,0.25)';
-      ctx.strokeStyle = '#c084fc';
-      ctx.lineWidth = 1;
-      ctx.fill(); ctx.stroke();
-      // Through hole
-      ctx.beginPath();
-      ctx.arc(cx, cy, Math.max(1, screwD * scale / 2), 0, Math.PI * 2);
-      ctx.fillStyle = '#0a0d14';
-      ctx.fill();
-    });
-
-    // 6. I/O cutouts (drawn as colored slots punching through walls)
+    // I/O cutouts on walls
     ios.filter(f => f.enabled).forEach(f => {
       const wallThk = p.wall_thickness;
-      let rx, ry, rw, rh;   // in world coords
+      let rx, ry, rw, rh;
       if (f.side === 'left') {
-        rx = 0;
-        ry = pcbOy + f.pos - f.width / 2;
-        rw = wallThk;
-        rh = f.width;
+        rx = 0; ry = pcbOy + f.pos - f.width / 2; rw = wallThk; rh = f.width;
       } else if (f.side === 'right') {
-        rx = ow - wallThk;
-        ry = pcbOy + f.pos - f.width / 2;
-        rw = wallThk;
-        rh = f.width;
+        rx = ow - wallThk; ry = pcbOy + f.pos - f.width / 2; rw = wallThk; rh = f.width;
       } else if (f.side === 'bottom') {
-        rx = pcbOx + f.pos - f.width / 2;
-        ry = 0;
-        rw = f.width;
-        rh = wallThk;
-      } else {  // top
-        rx = pcbOx + f.pos - f.width / 2;
-        ry = oh - wallThk;
-        rw = f.width;
-        rh = wallThk;
+        rx = pcbOx + f.pos - f.width / 2; ry = 0; rw = f.width; rh = wallThk;
+      } else {
+        rx = pcbOx + f.pos - f.width / 2; ry = oh - wallThk; rw = f.width; rh = wallThk;
       }
       ctx.fillStyle = 'rgba(245,158,11,0.55)';
       ctx.fillRect(px(rx), py(ry + rh), rw * scale, rh * scale);
       ctx.strokeStyle = '#f59e0b';
       ctx.lineWidth = 1.2;
       ctx.strokeRect(px(rx), py(ry + rh), rw * scale, rh * scale);
-      // Label
       ctx.fillStyle = '#fbbf24';
       ctx.font = '10px sans-serif';
-      const lx = px(rx + rw / 2);
-      const ly = py(ry + rh / 2);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      if (f.label && f.width * scale > 25) {
-        ctx.fillText(f.label, lx, ly);
-      }
+      const lx = px(rx + rw / 2);
+      const ly = py(ry + rh / 2);
+      if (f.label && f.width * scale > 25) ctx.fillText(f.label, lx, ly);
     });
 
-    // 7. Dimension labels on outer walls
+    // Dimensions
     ctx.fillStyle = '#64748b';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`${ow.toFixed(1)} mm`, px(ow / 2), py(oh) - 14);
+    ctx.fillText(`${ow.toFixed(1)} mm`, px(ow / 2), py(oh) - 12);
     ctx.save();
-    ctx.translate(px(0) - 14, py(oh / 2));
+    ctx.translate(px(0) - 12, py(oh / 2));
     ctx.rotate(-Math.PI / 2);
     ctx.fillText(`${oh.toFixed(1)} mm`, 0, 0);
     ctx.restore();
+
+    // Stash transform so click handler can hit-test
+    canvas._hitData = { pad, ox, oy, ow, oh, scale, pcbOx, pcbOy };
   }
+
+  // ── Front view (X-Z, looking along -Y) ──────────────────────────────────
+  // Side view (Y-Z, looking along -X) is identical with axis swap. Share code.
+  function drawProfile(canvasId, axis /* 'x' or 'y' */) {
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const W = canvas.width / dpr, H = canvas.height / dpr, pad = 30;
+    const p = getParams();
+    const g = insertGeometry(p);
+
+    const board_axis_len = axis === 'x' ? pcb.board_width : pcb.board_height;
+    const outer_axis_len = board_axis_len + 2 * p.tolerance + 2 * p.wall_thickness;
+    const wall = p.wall_thickness;
+    const floor = p.floor_thickness;
+    const lid_h = p.lid_thickness;
+    const lip_depth = 2.0;
+    const inner_h = p.inner_height;
+    const stand_h = g.eff_standoff;
+    const total_h = floor + stand_h + inner_h + lid_h;
+
+    const scale = fitScale(W, H, outer_axis_len, total_h, pad);
+    const ox = (W - outer_axis_len * scale) / 2;
+    const oy = (H - total_h * scale) / 2;
+
+    // World -> canvas. Axis runs left->right, Z runs bottom->top (so flip).
+    const px = wa => ox + wa * scale;
+    const py = wz => oy + (total_h - wz) * scale;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Shell silhouette (filled) — outer rectangle, floor solid, walls solid, cavity hollow
+    ctx.fillStyle = '#1e2433';
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 1.5;
+
+    // Floor
+    ctx.fillRect(px(0), py(floor), outer_axis_len * scale, floor * scale);
+    ctx.strokeRect(px(0), py(floor), outer_axis_len * scale, floor * scale);
+
+    // Left + right walls (shell), up to lid bottom
+    const shell_top_z = floor + stand_h + inner_h;
+    ctx.fillRect(px(0), py(shell_top_z), wall * scale, (shell_top_z - floor) * scale);
+    ctx.strokeRect(px(0), py(shell_top_z), wall * scale, (shell_top_z - floor) * scale);
+    ctx.fillRect(px(outer_axis_len - wall), py(shell_top_z), wall * scale, (shell_top_z - floor) * scale);
+    ctx.strokeRect(px(outer_axis_len - wall), py(shell_top_z), wall * scale, (shell_top_z - floor) * scale);
+
+    // Lid (sits on top of shell), with lip overlap visualized
+    ctx.fillStyle = '#262d3f';
+    ctx.fillRect(px(0), py(total_h), outer_axis_len * scale, lid_h * scale);
+    ctx.strokeRect(px(0), py(total_h), outer_axis_len * scale, lid_h * scale);
+    // Lip (extending into shell cavity)
+    const cav_inner = outer_axis_len - 2 * wall - 0.4;
+    const lip_axis_w = wall;
+    ctx.fillStyle = '#1f2535';
+    ctx.fillRect(px(wall), py(shell_top_z), lip_axis_w * scale, lip_depth * scale);
+    ctx.fillRect(px(outer_axis_len - wall - lip_axis_w), py(shell_top_z), lip_axis_w * scale, lip_depth * scale);
+    ctx.strokeRect(px(wall), py(shell_top_z), lip_axis_w * scale, lip_depth * scale);
+    ctx.strokeRect(px(outer_axis_len - wall - lip_axis_w), py(shell_top_z), lip_axis_w * scale, lip_depth * scale);
+
+    // Project active holes onto this axis
+    const active = activeHolePositions();
+    // PCB-frame -> outer-frame offset along this axis:
+    const offsetAlong = wall + p.tolerance;
+
+    // PCB itself drawn as a thin green strip at standoff top
+    const pcb_thickness = 1.6; // assume FR4 standard for visualization
+    const pcb_z = floor + stand_h;
+    if (active.length > 0 || true) {
+      // PCB axis extent within cavity
+      ctx.fillStyle = 'rgba(34,197,94,0.15)';
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 1;
+      ctx.fillRect(px(offsetAlong), py(pcb_z + pcb_thickness), board_axis_len * scale, pcb_thickness * scale);
+      ctx.strokeRect(px(offsetAlong), py(pcb_z + pcb_thickness), board_axis_len * scale, pcb_thickness * scale);
+    }
+
+    // Standoffs (vertical columns) at each active hole, projected onto chosen axis
+    active.forEach(h => {
+      const axis_pos = (axis === 'x' ? h.x : h.y) + offsetAlong;
+      const so_x = axis_pos - g.standoff_od / 2;
+      // Standoff column
+      ctx.fillStyle = 'rgba(29,78,216,0.5)';
+      ctx.strokeStyle = '#60a5fa';
+      ctx.lineWidth = 1;
+      ctx.fillRect(px(so_x), py(floor + stand_h), g.standoff_od * scale, stand_h * scale);
+      ctx.strokeRect(px(so_x), py(floor + stand_h), g.standoff_od * scale, stand_h * scale);
+      // Heat-set pocket (cut into top of standoff)
+      const pocket_x = axis_pos - g.pocket_d / 2;
+      const pocket_top = floor + stand_h;
+      ctx.fillStyle = '#0a0d14';
+      ctx.fillRect(px(pocket_x), py(pocket_top), g.pocket_d * scale, g.pocket_depth * scale);
+      ctx.strokeStyle = '#3b82f6';
+      ctx.strokeRect(px(pocket_x), py(pocket_top), g.pocket_d * scale, g.pocket_depth * scale);
+
+      // Lid clearance hole (shown as a hollow slot through the lid plate)
+      const hole_x = axis_pos - g.lid_hole_d / 2;
+      ctx.fillStyle = '#0a0d14';
+      ctx.fillRect(px(hole_x), py(total_h), g.lid_hole_d * scale, lid_h * scale);
+      ctx.strokeStyle = '#3b82f6';
+      ctx.strokeRect(px(hole_x), py(total_h), g.lid_hole_d * scale, lid_h * scale);
+
+      // Screw path (vertical dashed line through air gap)
+      ctx.save();
+      ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(px(axis_pos), py(shell_top_z));
+      ctx.lineTo(px(axis_pos), py(pcb_z + pcb_thickness));
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    // I/O cutouts on shell walls (only visible if their side matches this view)
+    ios.filter(f => f.enabled).forEach(f => {
+      let on_left, on_right;
+      if (axis === 'x') { on_left = f.side === 'left'; on_right = f.side === 'right'; }
+      else              { on_left = f.side === 'bottom'; on_right = f.side === 'top'; }
+      if (!on_left && !on_right) return;
+      const z_lo = floor + stand_h + f.z_offset;
+      const cut_x = on_left ? 0 : outer_axis_len - wall;
+      ctx.fillStyle = '#0a0d14';
+      ctx.fillRect(px(cut_x), py(z_lo + f.height), wall * scale, f.height * scale);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(px(cut_x), py(z_lo + f.height), wall * scale, f.height * scale);
+    });
+
+    // Z dimension on right
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`H ${total_h.toFixed(1)} mm`, px(outer_axis_len) + 6, py(total_h / 2));
+    // Axis dimension on bottom
+    ctx.textAlign = 'center';
+    ctx.fillText(`${outer_axis_len.toFixed(1)} mm`, px(outer_axis_len / 2), py(0) + 14);
+
+    // Layer labels (small, left side)
+    ctx.fillStyle = '#475569';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Boden', px(0) - 4, py(floor / 2));
+    ctx.fillText('PCB',   px(0) - 4, py(pcb_z + pcb_thickness / 2));
+    ctx.fillText('Lid',   px(0) - 4, py(total_h - lid_h / 2));
+  }
+
+  function drawFront() { drawProfile('view-front', 'x'); }
+  function drawSide()  { drawProfile('view-side',  'y'); }
+
+  // ── Click-toggle on top view ────────────────────────────────────────────
+  document.getElementById('view-top').addEventListener('click', e => {
+    if (!pcb) return;
+    const canvas = e.currentTarget;
+    const rect = canvas.getBoundingClientRect();
+    const cx = e.clientX - rect.left;
+    const cy = e.clientY - rect.top;
+    const data = canvas._hitData;
+    if (!data) return;
+    const p = getParams();
+    const g = insertGeometry(p);
+
+    // Find closest hole within hit radius
+    let best = -1, bestDist = Infinity;
+    const hitR = Math.max(8, g.standoff_od * data.scale / 2 + 2);
+    holes.forEach((h, i) => {
+      const hx = data.ox + (data.pcbOx + h.x) * data.scale;
+      const hy = data.oy + (data.oh - (data.pcbOy + h.y)) * data.scale;
+      const d = Math.hypot(hx - cx, hy - cy);
+      if (d < hitR && d < bestDist) { best = i; bestDist = d; }
+    });
+    if (best >= 0) {
+      holes[best].enabled = !holes[best].enabled;
+      renderHolesTable();
+      redraw();
+      updateHints();
+    }
+  });
 
   // ── Generate ────────────────────────────────────────────────────────────
   async function generateEnclosure() {
@@ -808,7 +1086,6 @@
     btn.innerHTML = '<span class="spinner"></span> Wird berechnet …';
     showStatus('info', 'CAD-Kernel generiert Gehäuse …');
 
-    // Convert UI I/O (side + pos) back to (x, y) for backend
     const ioPayload = ios.map(f => {
       let x, y;
       if (f.side === 'left')        { x = 0;                 y = f.pos; }
@@ -824,7 +1101,7 @@
 
     const holePayload = holes.map(h => ({
       x: h.x, y: h.y, diameter: h.diameter,
-      is_mounting: true, enabled: h.enabled,
+      is_mounting: !!h.is_mounting, enabled: h.enabled,
     }));
 
     const payload = {
@@ -882,6 +1159,7 @@
       const secId = ['', 'sec-upload', 'sec-params', 'sec-download'][i];
       document.getElementById(secId).className = 'section ' + (i === n ? 'visible' : '');
     });
+    if (n === 2) setTimeout(redraw, 0);
   }
   function showStatus(type, msg) {
     const bar = document.getElementById('status-bar');
@@ -895,6 +1173,8 @@
     setStep(1);
     document.getElementById('status-bar').style.display = 'none';
   }
+
+  window.addEventListener('resize', () => { if (pcb) redraw(); });
 </script>
 </body>
 </html>
